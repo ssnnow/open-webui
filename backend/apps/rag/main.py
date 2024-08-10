@@ -131,6 +131,8 @@ from config import (
     RAG_EMBEDDING_OPENAI_BATCH_SIZE,
 )
 
+from apps.webui.models.storage import StorageProvider
+storage = StorageProvider()
 from constants import ERROR_MESSAGES
 
 log = logging.getLogger(__name__)
@@ -1232,7 +1234,8 @@ def process_doc(
     user=Depends(get_verified_user),
 ):
     try:
-        file = Files.get_file_by_id(form_data.file_id)
+        file = storage.get_file_by_id(form_data.file_id)
+
         file_path = file.meta.get("path", f"{UPLOAD_DIR}/{file.filename}")
 
         f = open(file_path, "rb")

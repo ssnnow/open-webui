@@ -549,6 +549,14 @@ if CUSTOM_NAME:
 # File Upload DIR
 ####################################
 
+
+S3_SECRET_ID = os.environ.get("S3_SECRET_ID", None)
+S3_SECRET_KEY = os.environ.get("S3_SECRET_KEY", None)
+S3_REGION = os.environ.get("S3_REGION", None)
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", None)
+S3_ENDPOINT = os.environ.get("S3_ENDPOINT", None)
+STORAGE_PROVIDER = os.environ.get("STORAGE_PROVIDER", None)
+
 UPLOAD_DIR = f"{DATA_DIR}/uploads"
 Path(UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
 

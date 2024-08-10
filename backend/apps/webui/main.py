@@ -46,6 +46,7 @@ from config import (
     AppConfig,
     OAUTH_USERNAME_CLAIM,
     OAUTH_PICTURE_CLAIM,
+    STORAGE_PROVIDER,
 )
 
 from apps.socket.main import get_event_call, get_event_emitter
@@ -111,7 +112,6 @@ app.include_router(memories.router, prefix="/memories", tags=["memories"])
 app.include_router(files.router, prefix="/files", tags=["files"])
 app.include_router(tools.router, prefix="/tools", tags=["tools"])
 app.include_router(functions.router, prefix="/functions", tags=["functions"])
-
 app.include_router(utils.router, prefix="/utils", tags=["utils"])
 
 
