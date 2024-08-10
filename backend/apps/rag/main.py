@@ -1,3 +1,4 @@
+import io
 from fastapi import (
     FastAPI,
     Depends,
@@ -131,7 +132,7 @@ from config import (
     RAG_EMBEDDING_OPENAI_BATCH_SIZE,
 )
 
-from apps.webui.models.storage import StorageProvider
+from backend.apps.storage.provider import StorageProvider
 storage = StorageProvider()
 from constants import ERROR_MESSAGES
 
@@ -1234,19 +1235,21 @@ def process_doc(
     user=Depends(get_verified_user),
 ):
     try:
-        file = storage.get_file_by_id(form_data.file_id)
+        # file = file.get_file_by_id(form_data.file_id)
 
-        file_path = file.meta.get("path", f"{UPLOAD_DIR}/{file.filename}")
+        # file_path = file.meta.get("path", f"{UPLOAD_DIR}/{file.filename}")
+        print(f"{form_data=}")
+        file_content, content_type = storage.get_file(form_data.file_id)
 
-        f = open(file_path, "rb")
+        # f = open(file_path, "rb")
 
         collection_name = form_data.collection_name
         if collection_name == None:
-            collection_name = calculate_sha256(f)[:63]
-        f.close()
+            collection_name = calculate_sha256(io.BytesIO(file_content))[:63]
+        # f.close()
 
         loader, known_type = get_loader(
-            file.filename, file.meta.get("content_type"), file_path
+           form_data.file_id, content_type, io.BytesIO(file_content)
         )
         data = loader.load()
 

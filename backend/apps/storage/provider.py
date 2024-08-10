@@ -1,12 +1,25 @@
 import os
 import boto3
 from botocore.exceptions import ClientError
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from config import (S3_SECRET_ID, S3_SECRET_KEY, S3_REGION, S3_BUCKET_NAME, S3_ENDPOINT,
-                    STORAGE_PROVIDER, UPLOAD_DIR)
+                    STORAGE_PROVIDER, UPLOAD_DIR,AppConfig)
 LOCAL_UPLOAD_DIR = UPLOAD_DIR
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.state.config = AppConfig()
 class StorageProvider:
     def __init__(self):
-        if STORAGE_PROVIDER == 'local':
+        if STORAGE_PROVIDER == None:
+            self._storage_type = 'local'
+        elif STORAGE_PROVIDER == 'local':
             self._storage_type = 'local'       
         elif STORAGE_PROVIDER == 's3':
             self._storage_type = 's3'
@@ -29,6 +42,7 @@ class StorageProvider:
     def upload_file(self, file, filename):
         if self._storage_type == 'local':
             file_path = os.path.join(LOCAL_UPLOAD_DIR, filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'wb') as f:
                 f.write(file.read())
             return filename
@@ -80,6 +94,8 @@ class StorageProvider:
         else:
             try:
                 bucket = self._get_bucket()
+                print(f"response = self.client.get_object(Bucket={bucket}, Key={filename})")
+
                 response = self.client.get_object(Bucket=bucket, Key=filename)
                 return response['Body'].read(), response['ContentType']
             except ClientError as e:

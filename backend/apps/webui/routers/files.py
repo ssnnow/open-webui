@@ -27,7 +27,7 @@ from apps.webui.models.files import (
     FileModel,
     FileModelResponse,
 )
-from apps.webui.models.storage import StorageProvider
+from backend.apps.storage.provider import StorageProvider
 from utils.utils import get_verified_user, get_admin_user
 from constants import ERROR_MESSAGES
 
@@ -43,7 +43,7 @@ storage = StorageProvider()
 async def upload_file(file: UploadFile = File(...), user=Depends(get_verified_user)):
     try:
         id = str(uuid.uuid4())
-        filename = f"{id}_{file.filename}"
+        filename = f"{user.name}/{id}_{file.filename}"
         storage.upload_file(file.file, filename)
         return {"id": id, "filename": filename}
     except RuntimeError as e:
@@ -90,7 +90,9 @@ async def delete_all_files(user=Depends(get_admin_user)):
 ############################
 
 @router.get("/{id}", response_model=Optional[BaseModel])
-async def get_file_by_id(id: str, user=Depends(get_verified_user)):
+async def 
+
+(id: str, user=Depends(get_verified_user)):
     filename = f"{id}_{id}"
     try:
         file_content, _ = storage.get_file(filename)
