@@ -27,7 +27,7 @@ from apps.webui.models.files import (
     FileModel,
     FileModelResponse,
 )
-from backend.apps.storage.provider import StorageProvider
+from apps.storage.provider import StorageProvider
 from utils.utils import get_verified_user, get_admin_user
 from constants import ERROR_MESSAGES
 
@@ -43,9 +43,30 @@ storage = StorageProvider()
 async def upload_file(file: UploadFile = File(...), user=Depends(get_verified_user)):
     try:
         id = str(uuid.uuid4())
-        filename = f"{user.name}/{id}_{file.filename}"
-        storage.upload_file(file.file, filename)
-        return {"id": id, "filename": filename}
+        dst_filename = f"{user.id}/{id}_{file.filename}"
+        storage.upload_file(file.file, dst_filename)
+        result = Files.insert_new_file(
+            user.id,
+            FileForm(
+                **{
+                    "id": id,
+                    "filename": f"{id}_{file.filename}",
+                    "meta": {
+                        "name": f"{id}_{file.filename}",
+                        "content_type": file.content_type,
+                        "size": file.size,
+                        "path": user.id,
+                    },
+                }
+            ),
+        )
+        if result:
+                    return result
+        else:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=ERROR_MESSAGES.DEFAULT("Error uploading file"),
+                    )
     except RuntimeError as e:
         log.exception(e)
         raise HTTPException(
@@ -90,13 +111,9 @@ async def delete_all_files(user=Depends(get_admin_user)):
 ############################
 
 @router.get("/{id}", response_model=Optional[BaseModel])
-async def 
-
-(id: str, user=Depends(get_verified_user)):
-    filename = f"{id}_{id}"
+async def get_file_by_id(id: str, user=Depends(get_verified_user)):
     try:
-        file_content, _ = storage.get_file(filename)
-        return {"id": id, "filename": filename}
+        file = storage.get_file(id)
     except (FileNotFoundError, RuntimeError) as e:
         log.exception(e)
         if '404' in str(e):
@@ -109,7 +126,7 @@ async def
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=ERROR_MESSAGES.DEFAULT("Error fetching file from storage"),
             )
-
+    return file
 ############################
 # Get File Content By Id
 ############################

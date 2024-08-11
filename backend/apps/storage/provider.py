@@ -5,6 +5,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import (S3_SECRET_ID, S3_SECRET_KEY, S3_REGION, S3_BUCKET_NAME, S3_ENDPOINT,
                     STORAGE_PROVIDER, UPLOAD_DIR,AppConfig)
+from apps.webui.models.files import (
+    Files,
+    FileForm,
+    FileModel,
+    FileModelResponse,
+)
 LOCAL_UPLOAD_DIR = UPLOAD_DIR
 app = FastAPI()
 app.add_middleware(
@@ -53,6 +59,7 @@ class StorageProvider:
                 return filename
             except ClientError as e:
                 raise RuntimeError(f"Error uploading file: {e}")
+            
 
     def list_files(self):
         if self._storage_type == 'local':
@@ -83,23 +90,20 @@ class StorageProvider:
             except ClientError as e:
                 raise RuntimeError(f"Error deleting all files: {e}")
 
-    def get_file(self, filename):
-        if self._storage_type == 'local':
-            file_path = os.path.join(LOCAL_UPLOAD_DIR, filename)
-            if os.path.isfile(file_path):
-                with open(file_path, 'rb') as f:
-                    return f.read(), 'application/octet-stream'
-            else:
-                raise FileNotFoundError(f"File {filename} not found in local storage.")
-        else:
+    def get_file(self, id):        
+        file=Files.get_file_by_id(id)
+        if self._storage_type == 'local':            
+            return file
+        elif self._storage_type == 's3':
             try:
-                bucket = self._get_bucket()
-                print(f"response = self.client.get_object(Bucket={bucket}, Key={filename})")
-
-                response = self.client.get_object(Bucket=bucket, Key=filename)
-                return response['Body'].read(), response['ContentType']
+                srcfile=f"{file.meta.get('path')}/{file.meta.get('name')}"
+                dstfile=f"{UPLOAD_DIR}/{srcfile}"
+                self.client.download_file(S3_BUCKET_NAME, srcfile, dstfile)               
             except ClientError as e:
                 raise RuntimeError(f"Error fetching file: {e}")
+        else:
+            raise RuntimeError(f"No Suppport storage_type")
+        return file
     def delete_file(self, filename):
         if self._storage_type == 'local':
             file_path = os.path.join(LOCAL_UPLOAD_DIR, filename)

@@ -132,7 +132,7 @@ from config import (
     RAG_EMBEDDING_OPENAI_BATCH_SIZE,
 )
 
-from backend.apps.storage.provider import StorageProvider
+from apps.storage.provider import StorageProvider
 storage = StorageProvider()
 from constants import ERROR_MESSAGES
 
@@ -1235,21 +1235,18 @@ def process_doc(
     user=Depends(get_verified_user),
 ):
     try:
-        # file = file.get_file_by_id(form_data.file_id)
-
-        # file_path = file.meta.get("path", f"{UPLOAD_DIR}/{file.filename}")
-        print(f"{form_data=}")
-        file_content, content_type = storage.get_file(form_data.file_id)
-
-        # f = open(file_path, "rb")
+        file = storage.get_file(form_data.file_id)
+        path = file.meta.get("path")
+        file_path =  f"{UPLOAD_DIR}/{path}/{file.filename}"
+        f = open(file_path, "rb")
 
         collection_name = form_data.collection_name
         if collection_name == None:
-            collection_name = calculate_sha256(io.BytesIO(file_content))[:63]
-        # f.close()
-
+            collection_name = calculate_sha256(f)[:63]
+        f.close()
+        
         loader, known_type = get_loader(
-           form_data.file_id, content_type, io.BytesIO(file_content)
+            file.filename, file.meta.get("content_type"), file_path
         )
         data = loader.load()
 
